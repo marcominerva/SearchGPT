@@ -22,7 +22,7 @@ public class ChatService : IChatService
     {
         searchOptions = new SearchOptions
         {
-            HighlightFields = { "content" }
+            HighlightFields = { "content-10" }
         };
 
         searchOptions.Select.Add("content");
