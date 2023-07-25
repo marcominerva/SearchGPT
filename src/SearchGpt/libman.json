@@ -19,9 +19,8 @@
             "destination": "wwwroot/lib/alpinejs"
         },
         {
-            "provider": "jsdelivr",
-            "library": "@alpinejs/persist@3.12.3",            
-            "destination": "wwwroot/lib/alpinejs/persist"
+            "library": "marked@5.1.1",
+            "destination": "wwwroot/lib/marked"
         }
     ]
 }
