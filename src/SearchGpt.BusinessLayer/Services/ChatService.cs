@@ -36,22 +36,28 @@ public class ChatService : IChatService
 
     public async Task<Result<ChatResponse>> AskAsync(ChatRequest request)
     {
-        await SetupAsync(request);
+        var question = await SetupAsync(request);
+        var response = await chatGptClient.AskAsync(request.ConversationId, question, addToConversationHistory: false);
 
-        var response = await chatGptClient.AskAsync(request.ConversationId, request.Message);
-        return new ChatResponse(response.GetMessage());
+        var answer = response.GetMessage();
+        await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer);
+
+        return new ChatResponse(answer);
     }
 
     public async IAsyncEnumerable<string> AskStreamAsync(ChatRequest request)
     {
-        await SetupAsync(request);
+        var question = await SetupAsync(request);
+        var responseStream = chatGptClient.AskStreamAsync(request.ConversationId, question, addToConversationHistory: false);
 
-        var responseStream = chatGptClient.AskStreamAsync(request.ConversationId, request.Message);
-
+        var answer = new StringBuilder();
         await foreach (var response in responseStream.AsDeltas())
         {
+            answer.Append(response);
             yield return response;
         }
+
+        await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer.ToString());
     }
 
     public async Task<Result> DeleteAsync(Guid conversationId)
@@ -60,10 +66,19 @@ public class ChatService : IChatService
         return Result.Ok();
     }
 
-    private async Task SetupAsync(ChatRequest request)
+    private async Task<string> SetupAsync(ChatRequest request)
     {
-        var chatGptResponse = await chatGptClient.AskAsync($$"""
-            Generate a search query based on names and concepts extracted from the following question:
+        var conversationExists = await chatGptClient.ConversationExistsAsync(request.ConversationId);
+        if (!conversationExists)
+        {
+            await chatGptClient.SetupAsync(request.ConversationId, """
+                You are an Assistant that acts as a search engine. You can use only the information that are included in this chat.
+                If you don't know the answer, suggest to refine the question. When you answer, always use the same language of the question.
+                """);
+        }
+
+        var chatGptResponse = await chatGptClient.AskAsync(request.ConversationId, $$"""
+            Generate a search query based on names and concepts extracted from the following question, taking into account also the previous queries:
             ---
             {{request.Message}}
             ---
@@ -72,9 +87,9 @@ public class ChatService : IChatService
         var query = chatGptResponse.GetMessage().Trim('"');
 
         var searchResults = await searchClient.SearchAsync<SearchDocument>(query, searchOptions);
-        await LoadDocumentsAsync(searchResults);
+        return GenerateQuestion(searchResults);
 
-        async Task LoadDocumentsAsync(SearchResults<SearchDocument> searchResults)
+        string GenerateQuestion(SearchResults<SearchDocument> searchResults)
         {
             var builder = new StringBuilder();
 
@@ -86,14 +101,16 @@ public class ChatService : IChatService
                 builder.AppendLine("---");
             }
 
-            var setupMessage = $$"""
-                You are an assistant that knows the following information only:
+            var question = $"""
+                Giving the following information:
                 ---
-                {{builder}}
-                You can use only the information above to answer questions. If you don't know the answer, reply suggesting to refine the question.
+                {builder}
+                Answer the following question:
+                ---
+                {request.Message}
                 """;
 
-            await chatGptClient.SetupAsync(request.ConversationId, setupMessage);
+            return question;
         }
     }
 }
