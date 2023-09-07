@@ -19,7 +19,7 @@
             "destination": "wwwroot/lib/alpinejs"
         },
         {
-            "library": "marked@8.0.0",
+            "library": "marked@8.0.1",
             "destination": "wwwroot/lib/marked"
         }
     ]
