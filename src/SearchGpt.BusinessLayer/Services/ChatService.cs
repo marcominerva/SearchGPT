@@ -67,6 +67,7 @@ public class ChatService : IChatService
             ---
             {{request.Message}}
             ---
+            When you answer, always use the same language of the question.
             """, new ChatGptParameters { Temperature = 0 });
 
         var query = chatGptResponse.GetMessage().Trim('"');
@@ -90,7 +91,9 @@ public class ChatService : IChatService
                 You are an assistant that knows the following information only:
                 ---
                 {{builder}}
-                You can use only the information above to answer questions. If you don't know the answer, reply suggesting to refine the question.
+                When you answer, always use the same language of the question.
+                You can use only the information above to answer questions.
+                If you don't know the answer, reply suggesting to refine the question.
                 """;
 
             await chatGptClient.SetupAsync(request.ConversationId, setupMessage);
