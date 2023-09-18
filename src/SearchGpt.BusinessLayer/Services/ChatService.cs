@@ -39,7 +39,7 @@ public class ChatService : IChatService
         await SetupAsync(request);
 
         var response = await chatGptClient.AskAsync(request.ConversationId, request.Message);
-        return new ChatResponse(response.GetMessage());
+        return new ChatResponse(response.GetContent());
     }
 
     public async IAsyncEnumerable<string> AskStreamAsync(ChatRequest request)
@@ -60,6 +60,7 @@ public class ChatService : IChatService
         return Result.Ok();
     }
 
+    [Obsolete]
     private async Task SetupAsync(ChatRequest request)
     {
         var chatGptResponse = await chatGptClient.AskAsync($$"""
