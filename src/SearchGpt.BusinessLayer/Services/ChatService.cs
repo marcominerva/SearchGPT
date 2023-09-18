@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using ChatGptNet;
-using ChatGptNet.Extensions;
 using ChatGptNet.Models;
 using OperationResults;
 using SearchGpt.BusinessLayer.Services.Interfaces;
@@ -17,6 +16,8 @@ public class ChatService : IChatService
     private readonly SearchClient searchClient;
 
     private static readonly SearchOptions searchOptions;
+
+    private const string ContentFilteredMessage = "The response was filtered by the content filtering system. Please modify your prompt and retry. To learn more about content filtering policies please read the documentation: https://go.microsoft.com/fwlink/?linkid=2198766";
 
     static ChatService()
     {
@@ -39,8 +40,16 @@ public class ChatService : IChatService
         var question = await SetupAsync(request);
         var response = await chatGptClient.AskAsync(request.ConversationId, question, addToConversationHistory: false);
 
-        var answer = response.GetMessage();
-        await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer);
+        string answer;
+        if (response.IsContentFiltered)
+        {
+            answer = ContentFilteredMessage;
+        }
+        else
+        {
+            answer = response.GetContent();
+            await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer);
+        }
 
         return new ChatResponse(answer);
     }
@@ -51,13 +60,25 @@ public class ChatService : IChatService
         var responseStream = chatGptClient.AskStreamAsync(request.ConversationId, question, addToConversationHistory: false);
 
         var answer = new StringBuilder();
-        await foreach (var response in responseStream.AsDeltas())
+        await foreach (var response in responseStream)
         {
-            answer.Append(response);
-            yield return response;
+            if (response.IsContentFiltered)
+            {
+                yield return ContentFilteredMessage;
+            }
+            else
+            {
+                var content = response.GetContent();
+                answer.Append(content);
+
+                yield return content;
+            }
         }
 
-        await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer.ToString());
+        if (answer.Length > 0)
+        {
+            await chatGptClient.AddInteractionAsync(request.ConversationId, request.Message, answer.ToString());
+        }
     }
 
     public async Task<Result> DeleteAsync(Guid conversationId)
@@ -84,7 +105,7 @@ public class ChatService : IChatService
             ---
             """, new ChatGptParameters { Temperature = 0 });
 
-        var query = chatGptResponse.GetMessage().Trim('"');
+        var query = chatGptResponse.GetContent().Trim('"');
 
         var searchResults = await searchClient.SearchAsync<SearchDocument>(query, searchOptions);
         return GenerateQuestion(searchResults);
