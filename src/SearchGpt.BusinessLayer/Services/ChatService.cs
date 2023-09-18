@@ -60,7 +60,6 @@ public class ChatService : IChatService
         return Result.Ok();
     }
 
-    [Obsolete]
     private async Task SetupAsync(ChatRequest request)
     {
         var chatGptResponse = await chatGptClient.AskAsync($$"""
@@ -71,7 +70,7 @@ public class ChatService : IChatService
             When you answer, always use the same language of the question.
             """, new ChatGptParameters { Temperature = 0 });
 
-        var query = chatGptResponse.GetMessage().Trim('"');
+        var query = chatGptResponse.GetContent().Trim('"');
 
         var searchResults = await searchClient.SearchAsync<SearchDocument>(query, searchOptions);
         await LoadDocumentsAsync(searchResults);
