@@ -54,12 +54,6 @@ public class ChatService : IChatService
         }
     }
 
-    public async Task<Result> DeleteAsync(Guid conversationId)
-    {
-        await chatGptClient.DeleteConversationAsync(conversationId);
-        return Result.Ok();
-    }
-
     private async Task SetupAsync(ChatRequest request)
     {
         var chatGptResponse = await chatGptClient.AskAsync($$"""

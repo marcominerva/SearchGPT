@@ -1,7 +1,7 @@
-﻿using SearchGpt.BusinessLayer.Services.Interfaces;
-using SearchGpt.Shared.Models;
-using MinimalHelpers.Routing;
+﻿using MinimalHelpers.Routing;
 using OperationResults.AspNetCore.Http;
+using SearchGpt.BusinessLayer.Services.Interfaces;
+using SearchGpt.Shared.Models;
 
 namespace SearchGpt.Endpoints;
 
@@ -20,11 +20,6 @@ public class ChatEndpoints : IEndpointRouteHandler
         chatGroupApi.MapPost("stream", StreamAsync)
             .WithName("AskStream")
             .ProducesValidationProblem()
-            .WithOpenApi();
-
-        chatGroupApi.MapDelete("{conversationId:guid}", DeleteAsync)
-            .WithName("DeleteConversation")
-            .Produces(StatusCodes.Status204NoContent)
             .WithOpenApi();
     }
 
@@ -51,13 +46,5 @@ public class ChatEndpoints : IEndpointRouteHandler
         }
 
         return Stream();
-    }
-
-    public async Task<IResult> DeleteAsync(Guid conversationId, IChatService chatService, HttpContext httpContext)
-    {
-        var result = await chatService.DeleteAsync(conversationId);
-
-        var response = httpContext.CreateResponse(result);
-        return response;
     }
 }
