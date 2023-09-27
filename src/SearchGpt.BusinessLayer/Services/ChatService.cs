@@ -106,9 +106,10 @@ public class ChatService : IChatService
             """, new ChatGptParameters { Temperature = 0 });
 
         var query = chatGptResponse.GetContent().Trim('"');
-
         var searchResults = await searchClient.SearchAsync<SearchDocument>(query, searchOptions);
-        return GenerateQuestion(searchResults);
+
+        var question = GenerateQuestion(searchResults);
+        return question;
 
         string GenerateQuestion(SearchResults<SearchDocument> searchResults)
         {
