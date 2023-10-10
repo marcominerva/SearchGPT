@@ -58,10 +58,10 @@ public class ChatService : IChatService
 
     private async Task SetupAsync(ChatRequest request)
     {
-        var chatGptResponse = await chatGptClient.AskAsync($$"""
+        var chatGptResponse = await chatGptClient.AskAsync($"""
             Generate a search query based on names and concepts extracted from the following question:
             ---
-            {{request.Message}}
+            {request.Message}
             ---
             When you answer, always use the same language of the question.
             """, new ChatGptParameters { Temperature = 0 });
@@ -83,10 +83,10 @@ public class ChatService : IChatService
                 builder.AppendLine("---");
             }
 
-            var setupMessage = $$"""
+            var setupMessage = $"""
                 You are an assistant that knows the following information only:
                 ---
-                {{builder}}
+                {builder}
                 When you answer, always use the same language of the question.
                 You can use only the information above to answer questions.
                 If you don't know the answer, reply suggesting to refine the question.

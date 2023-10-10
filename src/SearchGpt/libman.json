@@ -15,11 +15,11 @@
             "destination": "wwwroot/lib/jquery"
         },
         {
-            "library": "alpinejs@3.13.0",
+            "library": "alpinejs@3.13.1",
             "destination": "wwwroot/lib/alpinejs"
         },
         {
-            "library": "marked@9.0.3",
+            "library": "marked@9.1.0",
             "destination": "wwwroot/lib/marked"
         }
     ]
