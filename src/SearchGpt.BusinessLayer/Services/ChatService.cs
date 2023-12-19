@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using ChatGptNet;
+using ChatGptNet.Extensions;
 using ChatGptNet.Models;
 using OperationResults;
 using SearchGpt.BusinessLayer.Services.Interfaces;
@@ -10,11 +11,8 @@ using SearchGpt.Shared.Models;
 
 namespace SearchGpt.BusinessLayer.Services;
 
-public class ChatService : IChatService
+public class ChatService(IChatGptClient chatGptClient, SearchClient searchClient) : IChatService
 {
-    private readonly IChatGptClient chatGptClient;
-    private readonly SearchClient searchClient;
-
     private static readonly SearchOptions searchOptions;
 
     private const string ContentFilteredMessage = "***** (The response was filtered by the content filtering system. Please modify your prompt and retry. To learn more about content filtering policies please read the documentation: https://go.microsoft.com/fwlink/?linkid=2198766)";
@@ -27,12 +25,6 @@ public class ChatService : IChatService
         };
 
         searchOptions.Select.Add("content");
-    }
-
-    public ChatService(IChatGptClient chatGptClient, SearchClient searchClient)
-    {
-        this.chatGptClient = chatGptClient;
-        this.searchClient = searchClient;
     }
 
     public async Task<Result<ChatResponse>> AskAsync(ChatRequest request)
